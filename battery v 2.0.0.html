@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="referrer" content="no-referrer" />
+  <meta name="author" content="PersianTechNet" />
+  <meta name="copyright" content="PersianTechNet @2026" />
+  <title>منبع انرژی زنده - PersianTechNet | مدیریت هوشمند باتری</title>
+  <style>
+    /* -------------------------------------------------------------
+      RESET & GLOBAL VARIABLES (بهبود یافته و تمیزتر)
+    ------------------------------------------------------------- */
+    :root {
+      --primary-color: #00ff99;
+      --primary-glow: rgba(0, 255, 153, 0.25);
+      --background-color: #0a0c0f;
+      --card-color: #12161c;
+      --card-border: #1e2a32;
+      --accent-color: #1e90ff;
+      --text-light: #e2f0e8;
+      --text-muted: #8ea3b0;
+      --warning-color: #ffaa44;
+      --danger-color: #ff5a5a;
+      --radius: 16px;
+      --transition-smooth: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Vazirmatn', 'Segoe UI', 'Tahoma', system-ui, sans-serif;
+      background: radial-gradient(circle at 20% 30%, #0b0e12, #030507);
+      color: var(--text-light);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    /* container مدرن با backdrop */
+    .container {
+      width: 100%;
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: rgba(18, 22, 28, 0.92);
+      backdrop-filter: blur(2px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 255, 153, 0.1) inset;
+      padding: 1.8rem 2rem;
+      transition: var(--transition-smooth);
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff, #8affcf);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      margin-bottom: 0.4rem;
+      letter-spacing: -0.3px;
+    }
+
+    .subhead {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      border-right: 3px solid var(--primary-color);
+      padding-right: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* باتری سکشن */
+    .battery-section {
+      background: #00000022;
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+
+    .battery-box {
+      width: 100%;
+      height: 56px;
+      background: #11171f;
+      border: 2px solid var(--primary-color);
+      border-radius: 14px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 0 8px var(--primary-glow);
+    }
+
+    .battery-level {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(94deg, #00e68a, #1e90ff, #00c3ff);
+      transition: width 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 0 6px #00ff9940;
+    }
+
+    .battery-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      font-weight: 500;
+      background: #0c1118;
+      padding: 8px 14px;
+      border-radius: 50px;
+      font-size: 0.9rem;
+    }
+
+    /* نمودار */
+    .chart-container {
+      background: #0c0f14;
+      border-radius: 20px;
+      padding: 0.8rem;
+      margin: 1.25rem 0;
+      border: 1px solid #2a3340;
+    }
+
+    canvas {
+      max-height: 230px;
+      width: 100% !important;
+    }
+
+    /* بخش تحلیل */
+    .info-panel {
+      background: #0b0f16e6;
+      padding: 1rem;
+      border-radius: 18px;
+      margin: 0.8rem 0;
+      border-left: 3px solid var(--primary-color);
+    }
+
+    .analysis {
+      background: #0f141c;
+      padding: 0.85rem 1rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: #cfe6db;
+      border: 1px dashed #2c3e33;
+    }
+
+    .notice {
+      background: #2a2418;
+      color: #ffcd7e;
+      padding: 0.6rem;
+      border-radius: 28px;
+      font-size: 0.8rem;
+      text-align: center;
+      display: none;
+      margin: 0.5rem 0;
+    }
+
+    /* footer کپی‌رایت و سازمان */
+    .footer-copyright {
+      margin-top: 1.8rem;
+      padding-top: 1rem;
+      border-top: 1px solid #2a333c;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #6c869b;
+      letter-spacing: 0.3px;
+    }
+
+    .signature {
+      font-family: monospace;
+      font-size: 0.7rem;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    button.small-reset {
+      background: none;
+      border: 1px solid #2e3b45;
+      color: #9bb7d0;
+      border-radius: 30px;
+      padding: 0.2rem 0.8rem;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button.small-reset:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    @media (max-width: 560px) {
+      .card { padding: 1.2rem; }
+      h1 { font-size: 1.5rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation-duration: 0s !important; transition-duration: 0s !important; }
+    }
+  </style>
+  <!-- Chart.js لود با defer و fallback -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="container">
+  <div class="card" data-version="2.0.0-stable">
+    <h1>⚡ منبع انرژی زنده</h1>
+    <div class="subhead">تحلیل هوشمند مصرف انرژی · پایش پایدار باتری با ذخیره‌سازی محلی</div>
+
+    <div class="battery-section">
+      <div class="battery-box">
+        <div id="batteryLevelFill" class="battery-level" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+      </div>
+      <div class="battery-meta">
+        <span id="batteryPercentDisplay">--%</span>
+        <span id="batteryStateText">وضعیت: —</span>
+        <span id="timeEstimate">⏱️ --</span>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="liveBatteryCanvas" aria-label="نمودار روند درصد شارژ باتری"></canvas>
+    </div>
+
+    <div class="info-panel">
+      <div id="liveStatusMsg" class="info-text">🔄 در حال دریافت داده از Battery API ...</div>
+    </div>
+    <div id="dynamicAnalysis" class="analysis">📊 در انتظار داده‌های اولیه باتری ...</div>
+    <div id="compatibilityMsg" class="notice"></div>
+
+    <!-- بخش مدیریت: ریست کردن تاریخچه و نسخه گذاری با سازمان -->
+    <div class="footer-copyright">
+      <div class="signature">
+        <span>🔋 PersianTechNet · نسخه <strong id="appVersion">2.0.0</strong></span>
+        <button id="resetHistoryBtn" class="small-reset" aria-label="بازنشانی تاریخچه">🗑️ بازنشانی تاریخچه</button>
+      </div>
+      <div style="margin-top: 8px;">
+        © 2026 <strong>سازمان شبکه فن‌آوری پارسی (PersianTechNet)</strong> — تمامی حقوق محفوظ است.
+        <br><span id="liveTimestamp"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    // --------------------------------
+    //  PersianTechNet - نسخه 2.0.0 (بهبود ساختار، مدیریت حافظه، نسخه‌گذاری رسمی)
+    //  بهبودیافته: پایداری بالا، محاسبات نرخ دقیق‌تر، fallback مدرن
+    // --------------------------------
+    
+    // -------- المان‌ها ----------
+    const fillBar = document.getElementById('batteryLevelFill');
+    const percentSpan = document.getElementById('batteryPercentDisplay');
+    const stateSpan = document.getElementById('batteryStateText');
+    const timeSpan = document.getElementById('timeEstimate');
+    const liveMsg = document.getElementById('liveStatusMsg');
+    const analysisDiv = document.getElementById('dynamicAnalysis');
+    const compatMsgDiv = document.getElementById('compatibilityMsg');
+    const timestampSpan = document.getElementById('liveTimestamp');
+    const versionSpan = document.getElementById('appVersion');
+    const resetBtn = document.getElementById('resetHistoryBtn');
+    const chartCtx = document.getElementById('liveBatteryCanvas');
+
+    if(versionSpan) versionSpan.innerText = '2.0.0 (PersianTechNet)';
+    
+    // -------- تنظیمات ذخیره‌سازی ----------
+    const STORAGE_KEY = 'ptn_battery_hist_v2';
+    const MAX_HISTORY = 60;
+    let batteryHistory = [];      // آرایه از درصدها (0 تا 100)
+    let batteryChart = null;
+    let currentBattery = null;
+    let samplingInterval = null;
+    let lastRateCheck = null;
+    let lastRateLevel = null;
+
+    // -------- توابع کمکی امن ----------
+    function safeStorageSet(key, val) {
+      try { localStorage.setItem(key, val); return true; } catch(e) { return false; }
+    }
+    function safeStorageGet(key) {
+      try { return localStorage.getItem(key); } catch(e) { return null; }
+    }
+
+    // بارگذاری تاریخچه از localStorage
+    function loadHistoryFromStorage() {
+      const raw = safeStorageGet(STORAGE_KEY);
+      if (raw) {
+        try {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) {
+            batteryHistory = arr.filter(v => typeof v === 'number' && v >= 0 && v <= 100).slice(-MAX_HISTORY);
+          }
+        } catch(e) { batteryHistory = []; }
+      }
+      if (!batteryHistory.length) batteryHistory = [];
+    }
+
+    function persistHistory() {
+      const toStore = batteryHistory.slice(-MAX_HISTORY);
+      safeStorageSet(STORAGE_KEY, JSON.stringify(toStore));
+    }
+
+    // به‌روزرسانی نوار و اعداد UI
+    function updateUI(levelPercent, isCharging, chargingTimeSec, dischargingTimeSec) {
+      const percent = Math.min(100, Math.max(0, Math.floor(levelPercent)));
+      fillBar.style.width = `${percent}%`;
+      fillBar.setAttribute('aria-valuenow', percent);
+      percentSpan.innerText = `${percent}%`;
+      stateSpan.innerText = `وضعیت: ${isCharging ? '🔌 در حال شارژ' : '🔋 در حال مصرف'}`;
+      
+      // تخمین زمان
+      let timeText = '';
+      if (isCharging && Number.isFinite(chargingTimeSec) && chargingTimeSec > 0 && chargingTimeSec < 86400) {
+        const mins = Math.floor(chargingTimeSec / 60);
+        const secs = chargingTimeSec % 60;
+        timeText = `⏳ تا پر شدن: ${mins} دقیقه ${secs} ثانیه`;
+      } else if (!isCharging && Number.isFinite(dischargingTimeSec) && dischargingTimeSec > 0 && dischargingTimeSec < 86400) {
+        const mins = Math.floor(dischargingTimeSec / 60);
+        const secs = dischargingTimeSec % 60;
+        timeText = `⚠️ تا تخلیه: ${mins} دقیقه ${secs} ثانیه`;
+      } else {
+        timeText = isCharging ? '🔄 در حال محاسبه زمان شارژ' : '📊 تخمین مصرف در حال محاسبه';
+      }
+      timeSpan.innerText = timeText;
+      liveMsg.innerText = `📈 سطح فعلی: ${percent}% | ${isCharging ? 'اتصال به شارژر' : 'باتری در حال مصرف'}`;
+    }
+
+    // تحلیل هوشمند + هشدارها
+    function generateSmartAnalysis(percent, isCharging, ratePerMinute) {
+      let message = '';
+      if (percent <= 8 && !isCharging) return '⛔ هشدار بحرانی! سطح باتری بسیار پایین. لطفاً فوراً شارژر را وصل کنید.';
+      if (percent <= 18 && !isCharging) return '⚠️ هشدار: باتری در حال اتمام است (کمتر از 20%). برای ادامه کار شارژ کنید.';
+      if (percent >= 98 && isCharging) return '✅ شارژ تقریباً کامل است. برای افزایش طول عمر باتری، شارژر را جدا کنید.';
+      if (percent >= 80 && !isCharging) return '✔️ وضعیت مطلوب – سطح انرژی عالی است.';
+      if (isCharging && percent < 30) return '🔌 در حال شارژ سریع – به زودی به سطح ایمن می‌رسد.';
+      
+      if (ratePerMinute !== null && Math.abs(ratePerMinute) > 0.1) {
+        const trend = ratePerMinute > 0 ? `🔼 نرخ شارژ: +${ratePerMinute.toFixed(1)}%/min` : `🔽 نرخ دشارژ: ${ratePerMinute.toFixed(1)}%/min`;
+        message = `${trend} · ${percent}% باقی‌مانده`;
+      } else {
+        message = `🔋 مصرف پایدار · سطح فعلی ${percent}%`;
+      }
+      if (!isCharging && percent < 35) message += ' · توصیه به اتصال شارژر به زودی.';
+      return message;
+    }
+
+    // محاسبه نرخ تغییر و پیش‌بینی دقیق (پر یا خالی)
+    function computeRateAndPrediction(nowMs, currentPercent, isCharging) {
+      if (lastRateCheck === null || lastRateLevel === null) {
+        lastRateCheck = nowMs;
+        lastRateLevel = currentPercent;
+        return null;
+      }
+      const deltaMinutes = (nowMs - lastRateCheck) / 60000;
+      if (deltaMinutes < 0.3 || deltaMinutes > 15) {
+        lastRateCheck = nowMs;
+        lastRateLevel = currentPercent;
+        return null;
+      }
+      const deltaPct = currentPercent - lastRateLevel;
+      const ratePerMin = deltaPct / deltaMinutes;
+      lastRateCheck = nowMs;
+      lastRateLevel = currentPercent;
+      
+      let predictionText = '';
+      if (Math.abs(ratePerMin) < 0.08) predictionText = '';
+      else if (ratePerMin > 0 && isCharging) {
+        const need = 100 - currentPercent;
+        const minsToFull = need / ratePerMin;
+        if (isFinite(minsToFull) && minsToFull > 0 && minsToFull < 720) {
+          predictionText = ` | پیش‌بینی شارژ کامل: ~${minsToFull.toFixed(1)} دقیقه`;
+        }
+      } else if (ratePerMin < 0 && !isCharging) {
+        const minsToDead = currentPercent / Math.abs(ratePerMin);
+        if (isFinite(minsToDead) && minsToDead > 0 && minsToDead < 720) {
+          predictionText = ` | ⚡ تا خاموشی: ~${minsToDead.toFixed(1)} دقیقه`;
+        }
+      }
+      return { rate: ratePerMin, prediction: predictionText };
+    }
+
+    // افزودن نمونه به تاریخچه و بروزرسانی نمودار
+    function addSampleToHistory(percent) {
+      const lastVal = batteryHistory.length ? batteryHistory[batteryHistory.length - 1] : null;
+      if (lastVal !== percent) {
+        batteryHistory.push(percent);
+        if (batteryHistory.length > MAX_HISTORY) batteryHistory.shift();
+        persistHistory();
+      }
+      updateChart(batteryHistory);
+    }
+
+    // نمودار Line با Chart.js
+    function updateChart(dataPoints) {
+      if (!chartCtx || typeof Chart === 'undefined') return;
+      const labels = dataPoints.map((_, idx) => `${idx+1}`);
+      const gradientColor = '#00ffaa';
+      if (batteryChart) {
+        batteryChart.data.labels = labels;
+        batteryChart.data.datasets[0].data = dataPoints;
+        batteryChart.update();
+        return;
+      }
+      const ctx = chartCtx.getContext('2d');
+      batteryChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'درصد شارژ (%)',
+            data: dataPoints,
+            borderColor: '#14ff9e',
+            backgroundColor: 'rgba(0,255,150,0.05)',
+            borderWidth: 2.5,
+            pointRadius: 3,
+            pointBackgroundColor: '#00e68a',
+            pointBorderColor: '#0a1a12',
+            tension: 0.2,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            tooltip: { callbacks: { label: (ctx) => `${ctx.raw}% شارژ` } },
+            legend: { display: false }
+          },
+          scales: {
+            y: { min: 0, max: 100, grid: { color: '#2e3b3b' }, title: { display: true, text: 'درصد شارژ', color: '#9abbce' } },
+            x: { ticks: { maxRotation: 35, autoSkip: true }, title: { display: true, text: 'تعداد نمونه‌ها', color: '#9abbce' } }
+          }
+        }
+      });
+    }
+
+    // تابع اصلی پردازش باتری (از رویدادها و تایمر)
+    let processingLock = false;
+    async function processBatteryUpdate(battery) {
+      if (processingLock) return;
+      processingLock = true;
+      try {
+        let level = battery.level;
+        let charging = battery.charging;
+        let chargingTime = battery.chargingTime;
+        let dischargingTime = battery.dischargingTime;
+        
+        const percentRaw = level * 100;
+        const percentValue = Math.min(100, Math.max(0, Number(percentRaw)));
+        const now = Date.now();
+        
+        // محاسبه نرخ
+        const rateObj = computeRateAndPrediction(now, percentValue, charging);
+        let analysisMessage = generateSmartAnalysis(percentValue, charging, rateObj ? rateObj.rate : null);
+        if (rateObj && rateObj.prediction) analysisMessage += rateObj.prediction;
+        
+        updateUI(percentValue, charging, chargingTime, dischargingTime);
+        analysisDiv.innerHTML = `🧠 ${analysisMessage}`;
+        
+        // ثبت در تاریخچه
+        addSampleToHistory(percentValue);
+      } catch (err) {
+        console.warn("[PersianTechNet] error in processBatteryUpdate", err);
+      } finally {
+        processingLock = false;
+      }
+    }
+    
+    // تعریف هندلرها
+    function attachBatteryEvents(bat) {
+      const handler = () => processBatteryUpdate(bat);
+      const debouncedHandler = () => { setTimeout(handler, 40); }; // soft debounce
+      bat.addEventListener('levelchange', debouncedHandler);
+      bat.addEventListener('chargingchange', debouncedHandler);
+      bat.addEventListener('chargingtimechange', debouncedHandler);
+      bat.addEventListener('dischargingtimechange', debouncedHandler);
+      return () => {
+        try {
+          bat.removeEventListener('levelchange', debouncedHandler);
+          bat.removeEventListener('chargingchange', debouncedHandler);
+          bat.removeEventListener('chargingtimechange', debouncedHandler);
+          bat.removeEventListener('dischargingtimechange', debouncedHandler);
+        } catch(e) {}
+      };
+    }
+
+    // تابع راه‌اندازی و پشتیبانی از Battery API
+    function initBatteryAPI() {
+      if (!navigator.getBattery) {
+        compatMsgDiv.style.display = 'block';
+        compatMsgDiv.innerHTML = '⚠️ مرورگر شما از Battery API پشتیبانی نمی‌کند. داده‌ها فقط بر اساس تاریخچه محلی خواهد بود.';
+        liveMsg.innerHTML = '⌛ حالت غیرفعال: داده زنده در دسترس نیست.';
+        // نمایش در صورت موجود بودن تاریخچه
+        if (batteryHistory.length > 0) {
+          const lastPercent = batteryHistory[batteryHistory.length-1];
+          updateUI(lastPercent, false, 0, 0);
+          analysisDiv.innerHTML = '📂 حالت آفلاین: نمایش آخرین تاریخچه ذخیره شده.';
+          updateChart(batteryHistory);
+        } else {
+          analysisDiv.innerHTML = '🔄 داده‌ای وجود ندارد. لطفاً در مرورگر سازگار (Chromium, Edge, جدید) باز کنید.';
+        }
+        return;
+      }
+      
+      navigator.getBattery().then(battery => {
+        currentBattery = battery;
+        compatMsgDiv.style.display = 'none';
+        // پردازش اولیه فوری
+        processBatteryUpdate(battery);
+        // راه‌اندازی event listener ها با پاکسازی خودکار
+        const cleanupEvents = attachBatteryEvents(battery);
+        // تایمر نمونه‌برداری اضافه برای افزایش دقت
+        if (samplingInterval) clearInterval(samplingInterval);
+        samplingInterval = setInterval(() => {
+          if (currentBattery) processBatteryUpdate(currentBattery);
+        }, 28000); // هر 28 ثانیه
+        
+        // ذخیره تابع پاکسازی برای beforeunload
+        window.__batteryCleanup = () => {
+          if (samplingInterval) clearInterval(samplingInterval);
+          cleanupEvents();
+        };
+      }).catch(err => {
+        compatMsgDiv.style.display = 'block';
+        compatMsgDiv.innerHTML = `❌ خطای دسترسی به Battery API: ${err.message || 'دسترسی محدود'}`;
+        liveMsg.innerHTML = '⚠️ دسترسی به وضعیت باتری ممکن نیست.';
+      });
+    }
+
+    // بازنشانی تاریخچه
+    function resetHistory() {
+      batteryHistory = [];
+      persistHistory();
+      if (batteryChart) {
+        batteryChart.data.labels = [];
+        batteryChart.data.datasets[0].data = [];
+        batteryChart.update();
+      }
+      analysisDiv.innerHTML = '🗑️ تاریخچه محلی بازنشانی شد. داده‌های جدید از لحظه جاری جمع‌آوری می‌شوند.';
+      if (currentBattery) {
+        processBatteryUpdate(currentBattery);
+      } else {
+        updateUI(0, false, 0, 0);
+        percentSpan.innerText = '0%';
+        fillBar.style.width = '0%';
+      }
+    }
+
+    // نمایش live timestamp (هر ثانیه به‌روز می‌شود)
+    function updateTimestamp() {
+      const now = new Date();
+      timestampSpan.innerText = `🕘 ${now.toLocaleDateString('fa-IR')} - ${now.toLocaleTimeString('fa-IR')}`;
+    }
+    
+    // مقداردهی اولیه
+    function bootstrap() {
+      loadHistoryFromStorage();
+      updateTimestamp();
+      setInterval(updateTimestamp, 1000);
+      initBatteryAPI();
+      
+      // در صورت بارگذاری دیرهنگام Chart.js
+      const waitForChart = setInterval(() => {
+        if (typeof Chart !== 'undefined' && batteryHistory.length && !batteryChart) {
+          updateChart(batteryHistory);
+          clearInterval(waitForChart);
+        }
+      }, 300);
+      setTimeout(() => clearInterval(waitForChart), 5000);
+      
+      // ریست دکمه
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => resetHistory());
+      }
+    }
+    
+    // پاکسازی منابع قبل از خروج
+    window.addEventListener('beforeunload', () => {
+      if (samplingInterval) clearInterval(samplingInterval);
+      if (window.__batteryCleanup) window.__batteryCleanup();
+      if (batteryChart) batteryChart.destroy();
+    });
+    
+    bootstrap();
+  })();
+</script>
+</body>
+</html>
